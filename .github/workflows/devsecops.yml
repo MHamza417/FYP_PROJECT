@@ -1,0 +1,26 @@
+name: IntelliSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  devsecops:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Verify Python
+        run: python --version
+
+      - name: Pipeline Started
+        run: echo "IntelliSecOps Pipeline Started Successfully"
