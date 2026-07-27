@@ -78,7 +78,7 @@ function Contact() {
             <FaPhoneAlt className="icon" />
             <div>
               <h3>Phone</h3>
-              <p>+92 300 1234567</p>
+              <p>+92 300 4371708</p>
             </div>
           </div>
 
