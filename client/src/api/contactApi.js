@@ -1,5 +1,5 @@
-// 127.0.0.1 standard IP use karein aakhir mein trailing slash ke sath
-const API_URL = 'http://127.0.0.1:8000/api/contact/';
+// Server ka public IP aur port use karein
+const API_URL = 'http://13.53.169.32:8000/api/contact/';
 
 export const sendContactMessage = async (formData) => {
   try {
@@ -19,7 +19,7 @@ export const sendContactMessage = async (formData) => {
 
     return await response.json();
   } catch (error) {
-    console.error("EXACT FETCH ERROR:", error); // Yeh browser console mein error print karega
+    console.error("EXACT FETCH ERROR:", error);
     return { status: "error", message: "Failed to send message" };
   }
 };
