@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:8000/api/services/';
+const API_URL = 'http://13.53.169.32:5000/api/services/';
 
 export const getServices = async () => {
   try {
