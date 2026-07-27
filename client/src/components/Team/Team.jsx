@@ -31,31 +31,52 @@ const members = [
 function Team() {
   return (
     <section className="team" id="team">
+
       <div className="team-title">
+
         <span>OUR TEAM</span>
+
         <h2>Meet Our Experts</h2>
+
         <p>
           Our experienced professionals build innovative
           digital solutions for modern businesses.
         </p>
+
       </div>
 
       <div className="team-grid">
-        {members.map((member) => (
-          <div className="team-card" key={member.name}>
+
+        {members.map((member, index) => (
+
+          <div className="team-card" key={index}>
+
             <img src={member.image} alt={member.name} />
+
             <div className="team-info">
+
               <h3>{member.name}</h3>
+
               <p>{member.role}</p>
+
               <div className="social">
+
                 <FaFacebookF />
+
                 <FaLinkedinIn />
+
                 <FaGithub />
+
               </div>
+
             </div>
+
           </div>
+
         ))}
+
       </div>
+
     </section>
   );
 }
