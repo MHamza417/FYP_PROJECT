@@ -87,7 +87,7 @@ function Contact() {
             <FaEnvelope className="icon" />
             <div>
               <h3>Email</h3>
-              <p>hamza.dev.pk@gmail.com</p>
+              <p>hamzadevelopers35@gmail.com</p>
             </div>
           </div>
 
