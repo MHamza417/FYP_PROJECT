@@ -3,7 +3,6 @@ pipeline {
     stages {
         stage('SonarQube Analysis') {
             steps {
-                // Aapka pehle se chalne wala SonarQube step yahan hoga
                 script {
                     def scannerHome = tool 'Sonar-Server';
                     withSonarQubeEnv('SonarQube') {
@@ -26,6 +25,18 @@ pipeline {
                 -r report.html \
                 -J report.json
                 '''
+            }
+        }
+
+        stage('Send Report to Django') {
+            steps {
+                script {
+                    sh '''
+                    curl -X POST http://127.0.0.1:8000/api/analyze-report/ \
+                    -H "Content-Type: application/json" \
+                    -d @zap-reports/report.json
+                    '''
+                }
             }
         }
     }
