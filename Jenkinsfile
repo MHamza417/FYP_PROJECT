@@ -1,6 +1,18 @@
 pipeline {
     agent any
     stages {
+        stage('SonarQube Analysis') {
+            steps {
+                // Aapka pehle se chalne wala SonarQube step yahan hoga
+                script {
+                    def scannerHome = tool 'Sonar-Server';
+                    withSonarQubeEnv('SonarQube') {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+        
         stage('OWASP ZAP Scan') {
             steps {
                 sh '''
