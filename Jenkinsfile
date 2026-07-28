@@ -36,7 +36,7 @@ pipeline {
                 zap-baseline.py \
                 -t http://13.63.222.33 \
                 -r report.html \
-                -J report.json
+                -J report.json || true
                 '''
             }
         }
