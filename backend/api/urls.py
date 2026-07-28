@@ -18,5 +18,5 @@ urlpatterns = [
 
     # DevSecOps & Reports
     path('github/webhook/', github_webhook, name='github_webhook'),
-    path('api/analyze-report/', AnalyzeReportView.as_view(), name='analyze-report'),
+    path('analyze-report/', AnalyzeReportView.as_view(), name='analyze-report'),
 ]

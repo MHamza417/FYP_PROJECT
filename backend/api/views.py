@@ -1,3 +1,5 @@
+from decouple import config
+genai.configure(api_key=os.getenv("gen-lang-client-0718640753"))
 import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,7 +15,7 @@ class AnalyzeReportView(APIView):
             project_name = data.get("site", "IntelliSecOps Project")
             
             # Gemini AI configuration
-            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+            genai.configure(api_key=os.getenv("gen-lang-client-0718640753"))
             model = genai.GenerativeModel("gemini-1.5-flash")
             
             prompt = f"""
