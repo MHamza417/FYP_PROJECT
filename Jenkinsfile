@@ -32,7 +32,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    curl -X POST http://127.0.0.1:8000/api/analyze-report/ \
+                    curl -X POST http://127.0.0.1:5000/api/analyze-report/ \
                     -H "Content-Type: application/json" \
                     -d @zap-reports/report.json
                     '''
