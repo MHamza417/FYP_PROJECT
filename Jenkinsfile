@@ -27,7 +27,10 @@ pipeline {
             steps {
                 sh '''
                 mkdir -p zap-reports
+                chmod 777 zap-reports
+                
                 docker run --rm \
+                -u root \
                 -v $(pwd)/zap-reports:/zap/wrk \
                 ghcr.io/zaproxy/zaproxy:stable \
                 zap-baseline.py \
