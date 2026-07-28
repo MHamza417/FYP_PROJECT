@@ -27,6 +27,11 @@ pipeline {
                 -p 5000:5000 \
                 --env-file ./backend/.env \
                 intellisecops-backend:latest
+
+                echo "Waiting for backend..."
+                sleep 10
+
+                curl -f http://127.0.0.1:5000
                 '''
             }
         }
@@ -37,10 +42,11 @@ pipeline {
                 mkdir -p zap-reports
 
                 docker run --rm \
+                --network host \
                 -v $(pwd)/zap-reports:/zap/wrk \
                 ghcr.io/zaproxy/zaproxy:stable \
                 zap-baseline.py \
-                -t http://13.63.222.33 \
+                -t http://127.0.0.1:5000 \
                 -r report.html \
                 -J report.json
                 '''
@@ -54,6 +60,12 @@ pipeline {
                 -H "Content-Type: application/json" \
                 -d @zap-reports/report.json
                 '''
+            }
+        }
+
+        stage('Archive ZAP Reports') {
+            steps {
+                archiveArtifacts artifacts: 'zap-reports/*', allowEmptyArchive: false
             }
         }
     }
