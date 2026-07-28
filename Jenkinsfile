@@ -1,72 +1,74 @@
 pipeline {
-    agent any
+agent any
 
-    stages {
+```
+stages {
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    def scannerHome = tool 'Sonar-Server'
-                    withSonarQubeEnv('SonarQube') {
-                        sh "${scannerHome}/bin/sonar-scanner"
-                    }
+    stage('SonarQube Analysis') {
+        steps {
+            script {
+                def scannerHome = tool 'Sonar-Server'
+                withSonarQubeEnv('SonarQube') {
+                    sh "${scannerHome}/bin/sonar-scanner"
                 }
             }
         }
+    }
 
-        stage('Build and Deploy Backend') {
-            steps {
-                sh '''
-                docker build -t intellisecops-backend:latest ./backend
+    stage('Build and Deploy Backend') {
+        steps {
+            sh '''
+            docker build -t intellisecops-backend:latest ./backend
 
-                docker stop intellisecops-backend || true
-                docker rm intellisecops-backend || true
+            docker stop intellisecops-backend || true
+            docker rm intellisecops-backend || true
 
-                docker run -d \
-                --name intellisecops-backend \
-                -p 5000:5000 \
-                --env-file ./backend/.env \
-                intellisecops-backend:latest
+            docker run -d \
+            --name intellisecops-backend \
+            -p 5000:5000 \
+            intellisecops-backend:latest
 
-                echo "Waiting for backend..."
-                sleep 10
+            echo "Waiting for backend..."
+            sleep 10
 
-                curl -f http://127.0.0.1:5000
-                '''
-            }
-        }
-
-        stage('OWASP ZAP Scan') {
-            steps {
-                sh '''
-                mkdir -p zap-reports
-
-                docker run --rm \
-                --network host \
-                -v $(pwd)/zap-reports:/zap/wrk \
-                ghcr.io/zaproxy/zaproxy:stable \
-                zap-baseline.py \
-                -t http://127.0.0.1:5000 \
-                -r report.html \
-                -J report.json
-                '''
-            }
-        }
-
-        stage('Send Report to Django') {
-            steps {
-                sh '''
-                curl -X POST http://127.0.0.1:5000/api/analyze-report/ \
-                -H "Content-Type: application/json" \
-                -d @zap-reports/report.json
-                '''
-            }
-        }
-
-        stage('Archive ZAP Reports') {
-            steps {
-                archiveArtifacts artifacts: 'zap-reports/*', allowEmptyArchive: false
-            }
+            curl -f http://127.0.0.1:5000
+            '''
         }
     }
+
+    stage('OWASP ZAP Scan') {
+        steps {
+            sh '''
+            mkdir -p zap-reports
+
+            docker run --rm \
+            --network host \
+            -v $(pwd)/zap-reports:/zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://127.0.0.1:5000 \
+            -r report.html \
+            -J report.json
+            '''
+        }
+    }
+
+    stage('Send Report to Django') {
+        steps {
+            sh '''
+            curl -X POST http://127.0.0.1:5000/api/analyze-report/ \
+            -H "Content-Type: application/json" \
+            -d @zap-reports/report.json
+            '''
+        }
+    }
+
+    stage('Archive ZAP Reports') {
+        steps {
+            archiveArtifacts artifacts: 'zap-reports/*', allowEmptyArchive: false
+        }
+    }
+}
+```
+
 }
