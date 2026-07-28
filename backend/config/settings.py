@@ -1,3 +1,17 @@
+import os
+from pathlib import Path
+import dotenv
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# .env file load karein
+dotenv_file = BASE_DIR / '.env'
+if dotenv_file.exists():
+    dotenv.load_dotenv(dotenv_file)
+
+# Phir aap apni API key ko aise access kar sakte hain:
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 """
 Django settings for config project.
 

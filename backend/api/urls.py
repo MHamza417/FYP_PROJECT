@@ -6,6 +6,7 @@ from .views import (
     team_list,
     contact_submit,
     github_webhook,
+    AnalyzeReportView,
 )
 
 urlpatterns = [
@@ -15,6 +16,7 @@ urlpatterns = [
     path('team/', team_list, name='team'),
     path('contact/', contact_submit, name='contact_submit'),
 
-    # DevSecOps
+    # DevSecOps & Reports
     path('github/webhook/', github_webhook, name='github_webhook'),
+    path('api/analyze-report/', AnalyzeReportView.as_view(), name='analyze-report'),
 ]

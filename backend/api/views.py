@@ -1,3 +1,48 @@
+import json
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import VulnerabilityReport
+import google.generativeai as genai
+import os
+
+class AnalyzeReportView(APIView):
+    def post(self, request):
+        try:
+            data = request.data
+            project_name = data.get("site", "IntelliSecOps Project")
+            
+            # Gemini AI configuration
+            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            
+            prompt = f"""
+            Analyze the following OWASP ZAP security report JSON and provide a summary of vulnerabilities 
+            along with actionable fix suggestions:
+            {json.dumps(data, indent=2)}
+            """
+            
+            response = model.generate_content(prompt)
+            gemini_text = response.text
+            
+            # Save to database
+            report_obj = VulnerabilityReport.objects.create(
+                project_name=project_name,
+                raw_json_report=data,
+                gemini_analysis=gemini_text
+            )
+            
+            return Response({
+                "status": "success",
+                "message": "Report analyzed and saved successfully!",
+                "report_id": report_obj.id
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
