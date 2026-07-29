@@ -17,15 +17,37 @@ from .serializers import (
 )
 
 
+def get_gemini_model():
+    """
+    Picks a currently-available Gemini model instead of a hardcoded name.
+    Google retires/renames models frequently, so we ask the API which
+    models this key can actually use, and prefer a 'flash' model
+    (cheaper/faster) if one is available.
+    """
+    genai.configure(api_key=config("GEMINI_API_KEY"))
+
+    available = [
+        m.name for m in genai.list_models()
+        if "generateContent" in m.supported_generation_methods
+    ]
+
+    if not available:
+        raise RuntimeError("No Gemini models with generateContent support are available for this API key.")
+
+    flash_models = [m for m in available if "flash" in m.lower()]
+    chosen = flash_models[0] if flash_models else available[0]
+
+    return genai.GenerativeModel(chosen)
+
+
 class AnalyzeReportView(APIView):
     def post(self, request):
         try:
             data = request.data
             project_name = data.get("site", "IntelliSecOps Project")
 
-            # Gemini AI configuration
-            genai.configure(api_key=config("GEMINI_API_KEY"))
-            model = genai.GenerativeModel("gemini-2.5-flash")
+            # Gemini AI configuration - dynamically picks an available model
+            model = get_gemini_model()
 
             prompt = f"""
             Analyze the following OWASP ZAP security report JSON and provide
