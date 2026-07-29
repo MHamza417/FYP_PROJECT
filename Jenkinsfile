@@ -1,131 +1,96 @@
 pipeline {
-agent any
+    agent any
 
+    environment {
+        GEMINI_API_KEY       = credentials('GEMINI_API_KEY')
+        SLACK_WEBHOOK_URL    = credentials('SLACK_WEBHOOK_URL')
+        GMAIL_USER           = credentials('GMAIL_USER')
+        GMAIL_APP_PASSWORD   = credentials('GMAIL_APP_PASSWORD')
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        EC2_HOST             = credentials('EC2_HOST')
+        EC2_SSH_KEY          = credentials('EC2_SSH_KEY')
+    }
 
-stages {
+    stages {
 
-    stage('SonarQube Analysis') {
-        steps {
-            script {
-                def scannerHome = tool 'Sonar-Server'
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
 
-                withSonarQubeEnv('SonarQube') {
-                    sh "${scannerHome}/bin/sonar-scanner"
+        stage('Install dependencies') {
+            steps {
+                sh '''
+                    pip install -r requirements.txt
+                    pip install sqlmap
+                '''
+            }
+        }
+
+        stage('Start ZAP daemon') {
+            steps {
+                sh '''
+                    docker run -d --name zap-daemon -u zap -p 8080:8080 zaproxy/zap-stable \
+                        zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.disablekey=true
+                    sleep 15
+                '''
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                sh 'docker build -f docker/Dockerfile -t intellisecops:latest .'
+            }
+        }
+
+        stage('Run security scan pipeline') {
+            steps {
+                sh 'python3 main.py'
+            }
+        }
+
+        stage('Archive scan report') {
+            steps {
+                archiveArtifacts artifacts: 'scan_report.json', allowEmptyArchive: true
+            }
+        }
+
+        stage('Deployment gate') {
+            steps {
+                script {
+                    def report = readJSON file: 'scan_report.json'
+                    if (report.deployment_blocked) {
+                        error("Deployment blocked: ${report.gate_reason}")
+                    } else {
+                        echo "Gate passed: ${report.gate_reason}"
+                    }
                 }
+            }
+        }
+
+        stage('Deploy to AWS EC2') {
+            steps {
+                sh '''
+                    echo "$EC2_SSH_KEY" > key.pem
+                    chmod 600 key.pem
+                    docker save intellisecops:latest | gzip > image.tar.gz
+                    scp -i key.pem -o StrictHostKeyChecking=no image.tar.gz ec2-user@$EC2_HOST:/tmp/
+                    ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST \
+                        "docker load < /tmp/image.tar.gz && docker stop intellisecops || true && docker rm intellisecops || true && docker run -d --name intellisecops intellisecops:latest"
+                '''
             }
         }
     }
 
-    stage('Build and Deploy Backend') {
-        steps {
-            sh '''
-                echo "Building Docker image..."
-
-                docker build -t intellisecops-backend:latest ./backend
-
-                echo "Stopping old container..."
-
-                docker stop intellisecops-backend || true
-                docker rm intellisecops-backend || true
-
-                echo "Starting new backend container..."
-
-                docker run -d \
-                    --name intellisecops-backend \
-                    -p 5000:5000 \
-                    intellisecops-backend:latest
-
-                echo "Waiting for backend..."
-
-                sleep 10
-
-                echo "Checking backend health..."
-
-                curl -f http://127.0.0.1:5000
-
-                echo "Backend deployed successfully!"
-            '''
+    post {
+        always {
+            sh 'docker stop zap-daemon || true'
+            sh 'docker rm zap-daemon || true'
+        }
+        failure {
+            echo 'Pipeline failed — check the deployment gate stage or scan logs above.'
         }
     }
-
-    stage('OWASP ZAP Scan') {
-        steps {
-            sh '''
-                echo "Preparing ZAP reports directory..."
-
-                mkdir -p zap-reports
-                chmod 777 zap-reports
-
-                echo "Starting OWASP ZAP scan..."
-
-                docker run --rm \
-                    -u root \
-                    -v "$(pwd)/zap-reports:/zap/wrk" \
-                    ghcr.io/zaproxy/zaproxy:stable \
-                    zap-baseline.py \
-                    -t http://13.63.222.33 \
-                    -r report.html \
-                    -J report.json || true
-
-                echo "ZAP scan completed."
-
-                echo "Generated reports:"
-
-                ls -lah zap-reports
-            '''
-        }
-    }
-
-    stage('Send Report to Django') {
-        steps {
-            sh '''
-                echo "Sending ZAP report to Django API..."
-
-                if [ -f zap-reports/report.json ]; then
-
-                    curl -f -X POST \
-                        http://127.0.0.1:5000/api/analyze-report/ \
-                        -H "Content-Type: application/json" \
-                        --data-binary @zap-reports/report.json
-
-                    echo "ZAP report successfully sent to Django!"
-
-                else
-
-                    echo "ERROR: ZAP report.json was not generated!"
-                    exit 1
-
-                fi
-            '''
-        }
-    }
-
-    stage('Archive ZAP Reports') {
-        steps {
-            echo 'Archiving ZAP reports...'
-
-            archiveArtifacts artifacts: 'zap-reports/*',
-                allowEmptyArchive: false
-
-            echo 'ZAP reports archived successfully!'
-        }
-    }
-}
-
-post {
-    success {
-        echo '======================================'
-        echo 'PIPELINE COMPLETED SUCCESSFULLY!'
-        echo '======================================'
-    }
-
-    failure {
-        echo '======================================'
-        echo 'PIPELINE FAILED!'
-        echo 'Check the Jenkins console output.'
-        echo '======================================'
-    }
-}
-```
-
 }
