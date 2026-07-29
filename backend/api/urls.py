@@ -21,6 +21,6 @@ urlpatterns = [
     path('github/webhook/', github_webhook, name='github_webhook'),
     path('analyze-report/', AnalyzeReportView.as_view(), name='analyze-report'),
     
-    # Grafana Metrics Endpoint
-    path('api/grafana-metrics/', grafana_metrics_api, name='grafana-metrics'),
+    # Sahi path (double api/ hata diya gaya hai)
+    path('grafana-metrics/', grafana_metrics_api, name='grafana-metrics'),
 ]
