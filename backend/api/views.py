@@ -1,5 +1,5 @@
 import json
-import google.generativeai as genai
+from google import genai
 
 from decouple import config
 from rest_framework.views import APIView
@@ -17,40 +17,18 @@ from .serializers import (
 )
 
 
-def get_gemini_model():
+def get_gemini_client():
     """
-    Configure Gemini and use a stable model directly.
+    Configure and return the modern Google GenAI client.
     """
     api_key = config("GEMINI_API_KEY")
 
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is missing.")
 
-    genai.configure(api_key=api_key)
-
-    # Use a guaranteed stable model directly to avoid deprecated 404 errors
-    selected_model = "gemini-1.5-flash"
-    
-    print("Selected Gemini model:", selected_model)
-
-    return genai.GenerativeModel(selected_model)
-
-    # Prefer Gemini Flash models
-    flash_models = [
-        model
-        for model in available_models
-        if "flash" in model.lower()
-    ]
-
-    if flash_models:
-        selected_model = flash_models[0]
-    else:
-        selected_model = available_models[0]
-
-    print("Available Gemini models:", available_models)
-    print("Selected Gemini model:", selected_model)
-
-    return genai.GenerativeModel(selected_model)
+    # Using the new google-genai client
+    client = genai.Client(api_key=api_key)
+    return client
 
 
 class AnalyzeReportView(APIView):
@@ -66,8 +44,8 @@ class AnalyzeReportView(APIView):
                 "IntelliSecOps Project"
             )
 
-            # Get available Gemini model
-            model = get_gemini_model()
+            # Get GenAI client
+            client = get_gemini_client()
 
             # Create prompt
             prompt = f"""
@@ -90,8 +68,11 @@ OWASP ZAP Report:
 {json.dumps(data, indent=2)}
 """
 
-            # Send report to Gemini
-            response = model.generate_content(prompt)
+            # Send report to Gemini using modern SDK
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+            )
 
             # Get Gemini response
             gemini_text = response.text
