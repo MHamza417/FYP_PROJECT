@@ -7,6 +7,7 @@ from .views import (
     contact_submit,
     github_webhook,
     AnalyzeReportView,
+    grafana_metrics_api,  # <-- Naya view import kiya
 )
 
 urlpatterns = [
@@ -19,4 +20,7 @@ urlpatterns = [
     # DevSecOps & Reports
     path('github/webhook/', github_webhook, name='github_webhook'),
     path('analyze-report/', AnalyzeReportView.as_view(), name='analyze-report'),
+    
+    # Grafana Metrics Endpoint
+    path('api/grafana-metrics/', grafana_metrics_api, name='grafana-metrics'),
 ]

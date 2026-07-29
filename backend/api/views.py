@@ -44,7 +44,6 @@ class AnalyzeReportView(APIView):
             )
 
             # --- TOKEN OPTIMIZATION ---
-            # ZAP report ki poori file bhejne se quota bachane ke liye sirf zaroori alerts extract kar rahe hain.
             alerts_summary = []
             
             sites = data.get("site", [])
@@ -90,9 +89,6 @@ Provide:
                 gemini_text = response.text
 
             except Exception as ai_err:
-                # --- FALLBACK MECHANISM ---
-                # Agar API quota exceed ho jaye ya koi error aaye, toh pipeline fail nahi hogi 
-                # balkay default message ke sath report save ho jayegi.
                 print("AI Generation Skipped due to Quota/Error:", str(ai_err))
                 gemini_text = (
                     "AI Analysis unavailable due to API quota limits or network issue. "
@@ -127,6 +123,33 @@ Provide:
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+# --- Grafana Metrics API ---
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def grafana_metrics_api(request):
+    """
+    Endpoint for Grafana to fetch vulnerability metrics/summary from SQLite database.
+    """
+    reports = VulnerabilityReport.objects.all().order_by("-created_at")
+    
+    total_reports = reports.count()
+    
+    # Summary data for charts/panels
+    data = {
+        "total_scans": total_reports,
+        "recent_projects": [report.project_name for report in reports[:5]],
+        "reports_summary": [
+            {
+                "id": report.id,
+                "project_name": report.project_name,
+                "created_at": getattr(report, "created_at", None),
+            }
+            for report in reports
+        ]
+    }
+    return Response(data, status=status.HTTP_200_OK)
 
 
 # Home API
