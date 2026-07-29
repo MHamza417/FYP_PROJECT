@@ -1,4 +1,3 @@
-```python
 import json
 import google.generativeai as genai
 
@@ -269,4 +268,3 @@ def github_webhook(request):
         },
         status=200
     )
-```
