@@ -1,6 +1,9 @@
 pipeline {
 agent any
 
+environment {
+    GEMINI_API_KEY = credentials('GEMINI_API_KEY')
+}
 
 stages {
 
@@ -35,6 +38,7 @@ stages {
                 docker run -d \
                     --name intellisecops-backend \
                     -p 5000:5000 \
+                    -e GEMINI_API_KEY="$GEMINI_API_KEY" \
                     intellisecops-backend:latest
 
                 echo "Waiting for backend..."
