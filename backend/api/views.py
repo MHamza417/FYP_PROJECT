@@ -19,10 +19,8 @@ from .serializers import (
 
 def get_gemini_model():
     """
-    Configure Gemini and select an available model
-    that supports generateContent.
+    Configure Gemini and use a stable model directly.
     """
-
     api_key = config("GEMINI_API_KEY")
 
     if not api_key:
@@ -30,18 +28,12 @@ def get_gemini_model():
 
     genai.configure(api_key=api_key)
 
-    # Get models available for this API key
-    available_models = []
+    # Use a guaranteed stable model directly to avoid deprecated 404 errors
+    selected_model = "gemini-1.5-flash"
+    
+    print("Selected Gemini model:", selected_model)
 
-    for model in genai.list_models():
-        if "generateContent" in model.supported_generation_methods:
-            available_models.append(model.name)
-
-    if not available_models:
-        raise RuntimeError(
-            "No Gemini model available for generateContent "
-            "with this API key."
-        )
+    return genai.GenerativeModel(selected_model)
 
     # Prefer Gemini Flash models
     flash_models = [
