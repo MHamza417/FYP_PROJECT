@@ -25,7 +25,7 @@ class AnalyzeReportView(APIView):
 
             # Gemini AI configuration
             genai.configure(api_key=config("GEMINI_API_KEY"))
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-2.5-flash")
 
             prompt = f"""
             Analyze the following OWASP ZAP security report JSON and provide
