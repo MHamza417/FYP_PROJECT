@@ -92,12 +92,23 @@ stages {
 
                 if [ -f zap-reports/report.json ]; then
 
-                    curl -f -X POST \
+                    HTTP_STATUS=$(curl -s -o django_response.json -w "%{http_code}" -X POST \
                         http://127.0.0.1:5000/api/analyze-report/ \
                         -H "Content-Type: application/json" \
-                        --data-binary @zap-reports/report.json
+                        --data-binary @zap-reports/report.json)
 
-                    echo "ZAP report successfully sent to Django!"
+                    echo "Django responded with HTTP $HTTP_STATUS"
+                    echo "Response body:"
+                    cat django_response.json
+                    echo ""
+
+                    if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+                        echo "ZAP report successfully sent to Django!"
+                    else
+                        echo "Django rejected the report. Backend logs:"
+                        docker logs intellisecops-backend --tail 50 || true
+                        exit 1
+                    fi
 
                 else
 
