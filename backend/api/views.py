@@ -26,7 +26,6 @@ def get_gemini_client():
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is missing.")
 
-    # Using the new google-genai client
     client = genai.Client(api_key=api_key)
     return client
 
@@ -44,6 +43,26 @@ class AnalyzeReportView(APIView):
                 "IntelliSecOps Project"
             )
 
+            # --- TOKEN OPTIMIZATION ---
+            # ZAP report ki poori file bhejne se quota foran khatam ho jata hai.
+            # Isliye hum sirf zaroori alerts extract kar rahe hain taaki tokens bachein.
+            alerts_summary = []
+            
+            # Agar report ZAP JSON format mein hai aur 'site' list hai
+            sites = data.get("site", [])
+            if isinstance(sites, list):
+                for site_item in sites:
+                    for alert in site_item.get("alerts", []):
+                        alerts_summary.append({
+                            "risk": alert.get("riskdesc"),
+                            "name": alert.get("name"),
+                            "description": alert.get("desc"),
+                            "solution": alert.get("solution")
+                        })
+            
+            # Fallback agar format thora mukhtalif ho
+            report_payload = alerts_summary if alerts_summary else data
+
             # Get GenAI client
             client = get_gemini_client()
 
@@ -51,21 +70,18 @@ class AnalyzeReportView(APIView):
             prompt = f"""
 You are a cybersecurity expert.
 
-Analyze the following OWASP ZAP security report.
+Analyze the following OWASP ZAP security report summary:
+
+{json.dumps(report_payload, indent=2)}
 
 Provide:
-
 1. Executive summary
-2. Total vulnerabilities
+2. Total vulnerabilities count
 3. Critical and high-risk vulnerabilities
 4. Medium and low-risk vulnerabilities
 5. Explanation of important security issues
 6. Recommended fixes
 7. Overall security assessment
-
-OWASP ZAP Report:
-
-{json.dumps(data, indent=2)}
 """
 
             # Send report to Gemini using modern SDK
@@ -84,7 +100,7 @@ OWASP ZAP Report:
 
             # Save report in database
             report_obj = VulnerabilityReport.objects.create(
-                project_name=project_name,
+                project_name=str(project_name),
                 raw_json_report=data,
                 gemini_analysis=gemini_text
             )
@@ -92,21 +108,14 @@ OWASP ZAP Report:
             return Response(
                 {
                     "status": "success",
-                    "message": (
-                        "Report analyzed and saved successfully!"
-                    ),
+                    "message": "Report analyzed and saved successfully!",
                     "report_id": report_obj.id
                 },
                 status=status.HTTP_201_CREATED
             )
 
         except Exception as e:
-
-            print(
-                "Gemini API Error:",
-                str(e)
-            )
-
+            print("Gemini API Error:", str(e))
             return Response(
                 {
                     "status": "error",
@@ -117,100 +126,57 @@ OWASP ZAP Report:
 
 
 # Home API
-
 @api_view(["GET"])
 def home(request):
-
     return Response(
         {
-            "message": (
-                "Welcome to Nexus Technologies API"
-            ),
+            "message": "Welcome to Nexus Technologies API",
             "status": "success"
         }
     )
 
 
 # Services API
-
 @api_view(["GET"])
 def service_list(request):
-
     services = Service.objects.all()
-
-    serializer = ServiceSerializer(
-        services,
-        many=True
-    )
-
-    return Response(
-        serializer.data
-    )
+    serializer = ServiceSerializer(services, many=True)
+    return Response(serializer.data)
 
 
 # Projects API
-
 @api_view(["GET"])
 def project_list(request):
-
     projects = Project.objects.all()
-
-    serializer = ProjectSerializer(
-        projects,
-        many=True
-    )
-
-    return Response(
-        serializer.data
-    )
+    serializer = ProjectSerializer(projects, many=True)
+    return Response(serializer.data)
 
 
 # Team API
-
 @api_view(["GET"])
 def team_list(request):
-
     team = Team.objects.all()
-
-    serializer = TeamSerializer(
-        team,
-        many=True
-    )
-
-    return Response(
-        serializer.data
-    )
+    serializer = TeamSerializer(team, many=True)
+    return Response(serializer.data)
 
 
 # Contact Submission API
-
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def contact_submit(request):
-
-    serializer = ContactMessageSerializer(
-        data=request.data
-    )
+    serializer = ContactMessageSerializer(data=request.data)
 
     if serializer.is_valid():
-
         serializer.save()
-
         return Response(
             {
-                "message": (
-                    "Message saved successfully!"
-                ),
+                "message": "Message saved successfully!",
                 "status": "success"
             },
             status=201
         )
 
-    print(
-        "VALIDATION ERRORS:",
-        serializer.errors
-    )
-
+    print("VALIDATION ERRORS:", serializer.errors)
     return Response(
         {
             "message": "Validation failed",
@@ -222,21 +188,13 @@ def contact_submit(request):
 
 
 # GitHub Webhook API
-
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def github_webhook(request):
-
-    print(
-        "GitHub Webhook Received:",
-        request.data
-    )
-
+    print("GitHub Webhook Received:", request.data)
     return Response(
         {
-            "message": (
-                "Webhook received successfully!"
-            ),
+            "message": "Webhook received successfully!",
             "status": "success"
         },
         status=200
