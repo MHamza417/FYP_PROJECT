@@ -44,11 +44,9 @@ class AnalyzeReportView(APIView):
             )
 
             # --- TOKEN OPTIMIZATION ---
-            # ZAP report ki poori file bhejne se quota foran khatam ho jata hai.
-            # Isliye hum sirf zaroori alerts extract kar rahe hain taaki tokens bachein.
+            # ZAP report ki poori file bhejne se quota bachane ke liye sirf zaroori alerts extract kar rahe hain.
             alerts_summary = []
             
-            # Agar report ZAP JSON format mein hai aur 'site' list hai
             sites = data.get("site", [])
             if isinstance(sites, list):
                 for site_item in sites:
@@ -60,14 +58,14 @@ class AnalyzeReportView(APIView):
                             "solution": alert.get("solution")
                         })
             
-            # Fallback agar format thora mukhtalif ho
             report_payload = alerts_summary if alerts_summary else data
+            gemini_text = ""
 
-            # Get GenAI client
-            client = get_gemini_client()
+            try:
+                # Get GenAI client & create prompt
+                client = get_gemini_client()
 
-            # Create prompt
-            prompt = f"""
+                prompt = f"""
 You are a cybersecurity expert.
 
 Analyze the following OWASP ZAP security report summary:
@@ -84,19 +82,25 @@ Provide:
 7. Overall security assessment
 """
 
-            # Send report to Gemini using modern SDK
-            response = client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=prompt,
-            )
+                # Send report to Gemini using modern SDK
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=prompt,
+                )
+                gemini_text = response.text
 
-            # Get Gemini response
-            gemini_text = response.text
+            except Exception as ai_err:
+                # --- FALLBACK MECHANISM ---
+                # Agar API quota exceed ho jaye ya koi error aaye, toh pipeline fail nahi hogi 
+                # balkay default message ke sath report save ho jayegi.
+                print("AI Generation Skipped due to Quota/Error:", str(ai_err))
+                gemini_text = (
+                    "AI Analysis unavailable due to API quota limits or network issue. "
+                    "Please check the raw JSON report data for complete vulnerability details."
+                )
 
             if not gemini_text:
-                raise RuntimeError(
-                    "Gemini returned an empty response."
-                )
+                gemini_text = "Analysis generated placeholder."
 
             # Save report in database
             report_obj = VulnerabilityReport.objects.create(
@@ -115,7 +119,7 @@ Provide:
             )
 
         except Exception as e:
-            print("Gemini API Error:", str(e))
+            print("Server Error:", str(e))
             return Response(
                 {
                     "status": "error",
@@ -126,8 +130,10 @@ Provide:
 
 
 # Home API
+
 @api_view(["GET"])
 def home(request):
+
     return Response(
         {
             "message": "Welcome to Nexus Technologies API",
@@ -137,37 +143,70 @@ def home(request):
 
 
 # Services API
+
 @api_view(["GET"])
 def service_list(request):
+
     services = Service.objects.all()
-    serializer = ServiceSerializer(services, many=True)
-    return Response(serializer.data)
+
+    serializer = ServiceSerializer(
+        services,
+        many=True
+    )
+
+    return Response(
+        serializer.data
+    )
 
 
 # Projects API
+
 @api_view(["GET"])
 def project_list(request):
+
     projects = Project.objects.all()
-    serializer = ProjectSerializer(projects, many=True)
-    return Response(serializer.data)
+
+    serializer = ProjectSerializer(
+        projects,
+        many=True
+    )
+
+    return Response(
+        serializer.data
+    )
 
 
 # Team API
+
 @api_view(["GET"])
 def team_list(request):
+
     team = Team.objects.all()
-    serializer = TeamSerializer(team, many=True)
-    return Response(serializer.data)
+
+    serializer = TeamSerializer(
+        team,
+        many=True
+    )
+
+    return Response(
+        serializer.data
+    )
 
 
 # Contact Submission API
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def contact_submit(request):
-    serializer = ContactMessageSerializer(data=request.data)
+
+    serializer = ContactMessageSerializer(
+        data=request.data
+    )
 
     if serializer.is_valid():
+
         serializer.save()
+
         return Response(
             {
                 "message": "Message saved successfully!",
@@ -176,7 +215,11 @@ def contact_submit(request):
             status=201
         )
 
-    print("VALIDATION ERRORS:", serializer.errors)
+    print(
+        "VALIDATION ERRORS:",
+        serializer.errors
+    )
+
     return Response(
         {
             "message": "Validation failed",
@@ -188,10 +231,16 @@ def contact_submit(request):
 
 
 # GitHub Webhook API
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def github_webhook(request):
-    print("GitHub Webhook Received:", request.data)
+
+    print(
+        "GitHub Webhook Received:",
+        request.data
+    )
+
     return Response(
         {
             "message": "Webhook received successfully!",
