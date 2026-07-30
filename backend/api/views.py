@@ -126,6 +126,7 @@ Provide:
 
 
 # --- Grafana Metrics API ---
+# --- Grafana Metrics API ---
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def grafana_metrics_api(request):
@@ -136,9 +137,33 @@ def grafana_metrics_api(request):
     
     total_reports = reports.count()
     
-    # Summary data for charts/panels
+    # Vulnerability types breakdown (JSON raw data se extract karne ke liye)
+    vulnerability_counts = {}
+    
+    for report in reports:
+        raw_data = report.raw_json_report
+        # Handle ZAP or custom report structure safely
+        sites = raw_data.get("site", []) if isinstance(raw_data, dict) else []
+        if isinstance(sites, list):
+            for site_item in sites:
+                for alert in site_item.get("alerts", []):
+                    vuln_name = alert.get("name", "Unknown Vulnerability")
+                    vulnerability_counts[vuln_name] = vulnerability_counts.get(vuln_name, 0) + 1
+        elif isinstance(raw_data, list):
+            # Agar summary list saved hai
+            for alert in raw_data:
+                vuln_name = alert.get("name", "Unknown Vulnerability")
+                vulnerability_counts[vuln_name] = vulnerability_counts.get(vuln_name, 0) + 1
+
+    # Format for Grafana charts (Pie/Donut chart compatible structure)
+    chart_data = [
+        {"vulnerability": key, "count": value} 
+        for key, value in vulnerability_counts.items()
+    ]
+
     data = {
         "total_scans": total_reports,
+        "vulnerability_breakdown": chart_data,
         "recent_projects": [report.project_name for report in reports[:5]],
         "reports_summary": [
             {
@@ -150,7 +175,6 @@ def grafana_metrics_api(request):
         ]
     }
     return Response(data, status=status.HTTP_200_OK)
-
 
 # Home API
 
