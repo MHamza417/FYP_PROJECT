@@ -1,6 +1,12 @@
 from django.contrib import admin
-# 1. Models import mein ContactMessage ko add kiya
-from .models import Service, Project, Team, ContactMessage 
+from .models import Service, Project, Team, ContactMessage, VulnerabilityReport
+
+
+@admin.register(VulnerabilityReport)
+class VulnerabilityReportAdmin(admin.ModelAdmin):
+    list_display = ("id", "project_name", "created_at")
+    search_fields = ("project_name",)
+    readonly_fields = ("created_at",)
 
 
 @admin.register(Service)
@@ -21,10 +27,8 @@ class TeamAdmin(admin.ModelAdmin):
     search_fields = ("name", "position")
 
 
-# 2. Naya ContactMessage model register kiya aapke purane style ke mutabik
 @admin.register(ContactMessage)
 class ContactMessageAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "email", "created_at")
     search_fields = ("name", "email")
-    # readonly_fields lagane se koi admin panel se data badal nahi sakega, sirf read karega
     readonly_fields = ("created_at",)
