@@ -156,24 +156,28 @@ def grafana_metrics_api(request):
                 vulnerability_counts[vuln_name] = vulnerability_counts.get(vuln_name, 0) + 1
 
     # Format for Grafana charts (Pie/Donut chart compatible structure)
+    # Format for Grafana charts (Pie/Donut chart compatible structure)
     chart_data = [
         {"vulnerability": key, "count": value} 
         for key, value in vulnerability_counts.items()
     ]
 
-    data = {
-        "total_scans": total_reports,
-        "vulnerability_breakdown": chart_data,
-        "recent_projects": [report.project_name for report in reports[:5]],
-        "reports_summary": [
-            {
-                "id": report.id,
-                "project_name": report.project_name,
-                "created_at": getattr(report, "created_at", None),
-            }
-            for report in reports
-        ]
-    }
+    # --- YEHAIN CHANGE KEREIN (Dictionary ki jagah List/Array return karein) ---
+    data = [
+        {
+            "total_scans": total_reports,
+            "vulnerability_breakdown": chart_data,
+            "recent_projects": [report.project_name for report in reports[:5]],
+            "reports_summary": [
+                {
+                    "id": report.id,
+                    "project_name": report.project_name,
+                    "created_at": getattr(report, "created_at", None),
+                }
+                for report in reports
+            ]
+        }
+    ]
     return Response(data, status=status.HTTP_200_OK)
 
 # Home API
