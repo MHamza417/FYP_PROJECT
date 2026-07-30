@@ -126,7 +126,6 @@ Provide:
 
 
 # --- Grafana Metrics API ---
-# --- Grafana Metrics API ---
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def grafana_metrics_api(request):
@@ -134,15 +133,12 @@ def grafana_metrics_api(request):
     Endpoint for Grafana to fetch vulnerability metrics/summary from SQLite database.
     """
     reports = VulnerabilityReport.objects.all().order_by("-created_at")
-    
     total_reports = reports.count()
     
-    # Vulnerability types breakdown (JSON raw data se extract karne ke liye)
     vulnerability_counts = {}
     
     for report in reports:
         raw_data = report.raw_json_report
-        # Handle ZAP or custom report structure safely
         sites = raw_data.get("site", []) if isinstance(raw_data, dict) else []
         if isinstance(sites, list):
             for site_item in sites:
@@ -150,36 +146,25 @@ def grafana_metrics_api(request):
                     vuln_name = alert.get("name", "Unknown Vulnerability")
                     vulnerability_counts[vuln_name] = vulnerability_counts.get(vuln_name, 0) + 1
         elif isinstance(raw_data, list):
-            # Agar summary list saved hai
             for alert in raw_data:
                 vuln_name = alert.get("name", "Unknown Vulnerability")
                 vulnerability_counts[vuln_name] = vulnerability_counts.get(vuln_name, 0) + 1
 
-    # Format for Grafana charts (Pie/Donut chart compatible structure)
-    # Format for Grafana charts (Pie/Donut chart compatible structure)
-    chart_data = [
-        {"vulnerability": key, "count": value} 
-        for key, value in vulnerability_counts.items()
-    ]
-
-    # --- YEHAIN CHANGE KEREIN (Dictionary ki jagah List/Array return karein) ---
+    # Grafana JSON plugin ke liye direct flat list banayein
     data = [
         {
-            "total_scans": total_reports,
-            "vulnerability_breakdown": chart_data,
-            "recent_projects": [report.project_name for report in reports[:5]],
-            "reports_summary": [
-                {
-                    "id": report.id,
-                    "project_name": report.project_name,
-                    "created_at": getattr(report, "created_at", None),
-                }
-                for report in reports
-            ]
+            "metric": "Total Scans",
+            "value": total_reports
         }
     ]
-    return Response(data, status=status.HTTP_200_OK)
+    
+    for key, value in vulnerability_counts.items():
+        data.append({
+            "metric": key,
+            "value": value
+        })
 
+    return Response(data, status=status.HTTP_200_OK)
 # Home API
 
 @api_view(["GET"])
