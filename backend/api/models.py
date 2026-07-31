@@ -1,15 +1,16 @@
 from django.db import models
 
+
 class VulnerabilityReport(models.Model):
     project_name = models.CharField(max_length=255)
     scan_date = models.DateTimeField(auto_now_add=True)
     raw_json_report = models.JSONField()
     gemini_analysis = models.TextField()
+    scan_type = models.CharField(max_length=20, default="ZAP")  # "ZAP" or "SQLMap"
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.project_name} - {self.scan_date}"
-from django.db import models
 
 
 class Service(models.Model):
@@ -19,7 +20,8 @@ class Service(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+
 class Project(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -30,7 +32,8 @@ class Project(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+
 class Team(models.Model):
     name = models.CharField(max_length=100)
     position = models.CharField(max_length=100)
@@ -40,9 +43,9 @@ class Team(models.Model):
     github = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return self.name    
-    
-# File ke end mein append karein:
+        return self.name
+
+
 class ContactMessage(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField()

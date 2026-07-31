@@ -7,7 +7,8 @@ from .views import (
     contact_submit,
     github_webhook,
     AnalyzeReportView,
-    grafana_metrics_api,  # <-- Naya view import kiya
+    AnalyzeSQLMapReportView,   # <-- NAYA IMPORT
+    grafana_metrics_api,
 )
 
 urlpatterns = [
@@ -20,7 +21,8 @@ urlpatterns = [
     # DevSecOps & Reports
     path('github/webhook/', github_webhook, name='github_webhook'),
     path('analyze-report/', AnalyzeReportView.as_view(), name='analyze-report'),
-    
+    path('analyze-sqlmap-report/', AnalyzeSQLMapReportView.as_view(), name='analyze-sqlmap-report'),  # <-- NAYI LINE
+
     # Sahi path (double api/ hata diya gaya hai)
     path('grafana-metrics/', grafana_metrics_api, name='grafana-metrics'),
 ]
