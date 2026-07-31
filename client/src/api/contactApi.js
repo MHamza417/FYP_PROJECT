@@ -1,5 +1,6 @@
-// Server ka public IP aur port use karein
-const API_URL = 'http://13.53.169.32:8000/api/contact/';
+const API_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api/contact/` 
+  : 'http://localhost:5000/api/contact/';
 
 export const sendContactMessage = async (formData) => {
   try {

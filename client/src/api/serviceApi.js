@@ -1,4 +1,6 @@
-const API_URL = 'http://13.53.169.32:5000/api/services/';
+const API_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api/services/` 
+  : 'http://localhost:5000/api/services/';
 
 export const getServices = async () => {
   try {
