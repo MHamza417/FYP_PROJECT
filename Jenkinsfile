@@ -58,6 +58,9 @@ pipeline {
 
                     curl -f http://127.0.0.1:5000
 
+                    echo "Running database migrations..."
+                    docker exec intellisecops-backend python manage.py migrate --noinput
+
                     echo "Backend deployed successfully!"
                 '''
             }
@@ -101,11 +104,15 @@ pipeline {
 
                     echo "Starting SQLMap database scan..."
 
+                    # Clone sqlmap once, reuse on future builds
+                    if [ ! -d "sqlmap-tool" ]; then
+                        git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git sqlmap-tool
+                    fi
+
                     # NOTE: Replace the -u URL with an actual endpoint that takes a parameter,
                     # e.g. $TARGET_URL/api/login?username=test
                     # -v 1 keeps output readable for the parser; increase --level/--risk once you trust it
-                    docker run --rm \
-                        alonemonkey/sqlmap \
+                    python3 sqlmap-tool/sqlmap.py \
                         -u "$TARGET_URL/api/analyze-report/?id=1" \
                         --batch \
                         --level=2 \
@@ -250,11 +257,13 @@ except Exception as e:
             echo 'PIPELINE COMPLETED SUCCESSFULLY!'
             echo '======================================'
 
-            slackSend(
-                channel: '#intellisecops-alerts',
-                color: 'good',
-                message: "✅ *IntelliSecOps Pipeline SUCCESS*\nBuild: #${env.BUILD_NUMBER}\nSecurity Gate: ${env.SECURITY_GATE_STATUS ?: 'N/A'}\nDetails: ${env.BUILD_URL}"
-            )
+            // Slack disabled until the "Slack Notification" plugin is installed & configured in Jenkins.
+            // Once ready, uncomment this block.
+            // slackSend(
+            //     channel: '#intellisecops-alerts',
+            //     color: 'good',
+            //     message: "✅ *IntelliSecOps Pipeline SUCCESS*\nBuild: #${env.BUILD_NUMBER}\nSecurity Gate: ${env.SECURITY_GATE_STATUS ?: 'N/A'}\nDetails: ${env.BUILD_URL}"
+            // )
 
             emailext(
                 subject: "✅ IntelliSecOps Build #${env.BUILD_NUMBER} - SUCCESS",
@@ -265,7 +274,7 @@ except Exception as e:
                     <p><b>Build URL:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
                 """,
                 mimeType: 'text/html',
-                to: 'your-team-email@gmail.com'
+                to: 'hamzamayo570@gmail.com'
             )
         }
 
@@ -275,11 +284,13 @@ except Exception as e:
             echo 'Check the Jenkins console output.'
             echo '======================================'
 
-            slackSend(
-                channel: '#intellisecops-alerts',
-                color: 'danger',
-                message: "🚨 *IntelliSecOps Pipeline FAILED*\nBuild: #${env.BUILD_NUMBER}\nSecurity Gate: ${env.SECURITY_GATE_STATUS ?: 'N/A'}\nDetails: ${env.BUILD_URL}console"
-            )
+            // Slack disabled until the "Slack Notification" plugin is installed & configured in Jenkins.
+            // Once ready, uncomment this block.
+            // slackSend(
+            //     channel: '#intellisecops-alerts',
+            //     color: 'danger',
+            //     message: "🚨 *IntelliSecOps Pipeline FAILED*\nBuild: #${env.BUILD_NUMBER}\nSecurity Gate: ${env.SECURITY_GATE_STATUS ?: 'N/A'}\nDetails: ${env.BUILD_URL}console"
+            // )
 
             emailext(
                 subject: "🚨 IntelliSecOps Build #${env.BUILD_NUMBER} - FAILED",
