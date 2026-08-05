@@ -252,6 +252,7 @@ except Exception as e:
             echo '======================================'
 
             slackSend(
+                tokenCredentialId: 'slack-token',
                 channel: '#all-pipeline-notifier',
                 color: 'good',
                 message: "✅ *IntelliSecOps Pipeline SUCCESS*\nBuild: #${env.BUILD_NUMBER}\nSecurity Gate: ${env.SECURITY_GATE_STATUS ?: 'N/A'}\nDetails: ${env.BUILD_URL}"
@@ -277,9 +278,10 @@ except Exception as e:
             echo '======================================'
 
             slackSend(
+                tokenCredentialId: 'slack-token',
                 channel: '#all-pipeline-notifier',
                 color: 'danger',
-                message: "❌ *IntelliSecOps Pipeline FAILED*\nBuild: #${env.BUILD_NUMBER}\nSecurity Gate: ${env.SECURITY_GATE_STATUS ?: 'N/A'}\nDetails: ${env.BUILD_URL}"
+                message: "❌ *IntelliSecOps Pipeline FAILED*\nBuild: #${env.BUILD_NUMBER}\nDetails: ${env.BUILD_URL}"
             )
 
             emailext(
